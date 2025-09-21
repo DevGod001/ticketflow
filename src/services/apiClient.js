@@ -28,8 +28,17 @@ class ApiClient {
 
   async request(endpoint, options = {}) {
     const url = `${this.baseURL}${endpoint}`;
+    const headers = this.getHeaders();
+    
+    // Add cache-busting headers for GET requests to ensure fresh data
+    if (!options.method || options.method === 'GET') {
+      headers['Cache-Control'] = 'no-cache, no-store, must-revalidate';
+      headers['Pragma'] = 'no-cache';
+      headers['Expires'] = '0';
+    }
+    
     const config = {
-      headers: this.getHeaders(),
+      headers,
       ...options,
     };
 
