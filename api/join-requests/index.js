@@ -5,6 +5,32 @@ const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-producti
 
 export default async function handler(req, res) {
   try {
+    if (req.method === 'GET' && req.query.check_org) {
+      // Allow organization lookup without authentication
+      const { organization_id } = req.query;
+
+      if (!organization_id) {
+        return res.status(400).json({ error: 'Organization ID is required' });
+      }
+
+      // Check if organization exists
+      const orgResult = await sql`
+        SELECT organization_id, name FROM organizations WHERE organization_id = ${organization_id}
+      `;
+
+      if (orgResult.rows.length === 0) {
+        return res.status(404).json({ error: 'Organization not found. Please check the ID and try again.' });
+      }
+
+      const organization = orgResult.rows[0];
+      return res.status(200).json({ 
+        exists: true, 
+        organization_id: organization.organization_id,
+        name: organization.name 
+      });
+    }
+
+    // For all other operations, require authentication
     const token = req.headers.authorization?.replace('Bearer ', '');
     
     if (!token) {
