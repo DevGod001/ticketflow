@@ -18,6 +18,7 @@ import {
   Crown,
   Shield,
   Search,
+  Trash2,
 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import RemoveMemberDialog from "../team/RemoveMemberDialog";
@@ -32,6 +33,8 @@ export default function OrgManagement({ organization, onUpdate }) {
   const [formData, setFormData] = useState(organization || {});
   const [isSaving, setIsSaving] = useState(false);
   const [copySuccess, setCopySuccess] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   if (!organization) {
     return (
@@ -80,6 +83,19 @@ export default function OrgManagement({ organization, onUpdate }) {
     } catch (error) {
       console.error("Failed to copy:", error);
     }
+  };
+
+  const handleDeleteOrganization = async () => {
+    setIsDeleting(true);
+    try {
+      await Organization.delete(organization.id);
+      setShowDeleteDialog(false);
+      // Redirect to organization page after deletion
+      window.location.href = "/organization";
+    } catch (error) {
+      console.error("Error deleting organization:", error);
+    }
+    setIsDeleting(false);
   };
 
   // Load all organization members
@@ -347,6 +363,29 @@ export default function OrgManagement({ organization, onUpdate }) {
                       </Badge>
                     </div>
                   </div>
+
+                  {/* Delete Organization Section - Only for owners */}
+                  {currentUser?.email === organization.owner_email && (
+                    <div className="border-t pt-6 mt-6">
+                      <div className="bg-red-50 p-4 rounded-lg">
+                        <h4 className="font-medium text-red-900 text-sm md:text-base mb-2">
+                          Danger Zone
+                        </h4>
+                        <p className="text-red-700 text-xs md:text-sm mb-4">
+                          Permanently delete this organization and all its data.
+                          This action cannot be undone.
+                        </p>
+                        <Button
+                          onClick={() => setShowDeleteDialog(true)}
+                          variant="outline"
+                          className="border-red-300 text-red-700 hover:bg-red-100"
+                        >
+                          <Trash2 className="w-4 h-4 mr-2" />
+                          Delete Organization
+                        </Button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </CardContent>
@@ -470,6 +509,73 @@ export default function OrgManagement({ organization, onUpdate }) {
           currentUser={currentUser}
           organization={organization}
         />
+      )}
+
+      {/* Delete Organization Confirmation Dialog */}
+      {showDeleteDialog && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-md w-full p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+                <Trash2 className="w-5 h-5 text-red-600" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-slate-900">
+                  Delete Organization
+                </h3>
+                <p className="text-sm text-slate-600">
+                  This action cannot be undone
+                </p>
+              </div>
+            </div>
+
+            <div className="mb-6">
+              <p className="text-slate-700 mb-3">
+                Are you sure you want to delete{" "}
+                <strong>{organization.name}</strong>?
+              </p>
+              <div className="bg-red-50 p-3 rounded-lg">
+                <p className="text-red-800 text-sm">
+                  This will permanently delete:
+                </p>
+                <ul className="text-red-700 text-sm mt-2 space-y-1">
+                  <li>• All organization data and settings</li>
+                  <li>• All member profiles and roles</li>
+                  <li>• All teams and departments</li>
+                  <li>• All tickets and collaboration rooms</li>
+                </ul>
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              <Button
+                onClick={() => setShowDeleteDialog(false)}
+                variant="outline"
+                className="flex-1"
+                disabled={isDeleting}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleDeleteOrganization}
+                className="flex-1 bg-red-600 hover:bg-red-700"
+                disabled={isDeleting}
+              >
+                {isDeleting ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                    Deleting...
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Delete Organization
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
