@@ -170,7 +170,13 @@ export default function Profile() {
       // 1. Update the global User data first (primary source)
       await User.updateMyUserData(formData);
 
-      // 2. Update organization member profile if user is in an organization
+      // 2. Immediately update the local UI state with the new data
+      setProfileUser((prev) => ({
+        ...prev,
+        ...formData,
+      }));
+
+      // 3. Update organization member profile if user is in an organization
       if (organization && currentUser) {
         // Fetch a fresh copy of the organization to ensure we're not working with stale data
         const orgs = await Organization.filter({ id: organization.id });
@@ -196,9 +202,11 @@ export default function Profile() {
         }
       }
 
-      // 3. Refresh and close edit mode
-      await loadProfile();
+      // 4. Close edit mode immediately (UI feels more responsive)
       setIsEditing(false);
+
+      // 5. Refresh data in background to ensure consistency
+      await loadProfile();
     } catch (error) {
       console.error("Error updating profile:", error);
     }
