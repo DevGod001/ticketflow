@@ -20,15 +20,15 @@ export default async function handler(req, res) {
     
     const { full_name, position, bio, phone, avatar_url, active_organization_id } = req.body;
 
-    // Update user profile
+    // Update user profile - only update fields that are provided
     const result = await sql`
       UPDATE users 
       SET 
-        full_name = ${full_name || ''},
-        position = ${position || ''},
-        bio = ${bio || ''},
-        phone = ${phone || ''},
-        avatar_url = ${avatar_url || ''},
+        full_name = COALESCE(${full_name}, full_name),
+        position = COALESCE(${position}, position),
+        bio = COALESCE(${bio}, bio),
+        phone = COALESCE(${phone}, phone),
+        avatar_url = COALESCE(${avatar_url}, avatar_url),
         active_organization_id = COALESCE(${active_organization_id}, active_organization_id),
         updated_at = CURRENT_TIMESTAMP
       WHERE id = ${decoded.userId}
