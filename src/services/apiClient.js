@@ -117,13 +117,15 @@ class ApiClient {
   }
 
   async getOrganization(id) {
-    return this.request(`/organizations/${id}`);
+    // Since we don't have individual org endpoints, get all and filter
+    const orgs = await this.getOrganizations();
+    return orgs.find(org => org.id === id) || null;
   }
 
   async updateOrganization(id, updates) {
-    return this.request(`/organizations/${id}`, {
+    return this.request(`/organizations?id=${id}`, {
       method: 'PUT',
-      body: updates,
+      body: { ...updates, id },
     });
   }
 

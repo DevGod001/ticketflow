@@ -188,6 +188,72 @@ export default async function handler(req, res) {
 
       res.status(200).json(organizations);
 
+    } else if (req.method === 'PUT') {
+      // Update organization (for member profiles, etc.)
+      const orgId = req.query.id || req.body.id;
+      
+      if (!orgId) {
+        return res.status(400).json({ error: 'Organization ID is required' });
+      }
+
+      // Check if user has permission to update this organization
+      const userResult = await sql`
+        SELECT verified_organizations FROM users WHERE id = ${decoded.userId}
+      `;
+
+      if (userResult.rows.length === 0) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+
+      const verifiedOrgs = userResult.rows[0].verified_organizations || [];
+      
+      if (!verifiedOrgs.includes(parseInt(orgId))) {
+        return res.status(403).json({ error: 'Not authorized to update this organization' });
+      }
+
+      // Get current organization
+      const orgResult = await sql`
+        SELECT * FROM organizations WHERE id = ${orgId}
+      `;
+
+      if (orgResult.rows.length === 0) {
+        return res.status(404).json({ error: 'Organization not found' });
+      }
+
+      const currentOrg = orgResult.rows[0];
+      const updates = req.body;
+
+      // Update organization
+      const result = await sql`
+        UPDATE organizations 
+        SET 
+          name = ${updates.name || currentOrg.name},
+          description = ${updates.description || currentOrg.description},
+          member_profiles = ${JSON.stringify(updates.member_profiles || currentOrg.member_profiles)},
+          settings = ${JSON.stringify(updates.settings || currentOrg.settings)},
+          updated_at = CURRENT_TIMESTAMP
+        WHERE id = ${orgId}
+        RETURNING *
+      `;
+
+      const updatedOrg = result.rows[0];
+
+      res.status(200).json({
+        id: updatedOrg.id,
+        organization_id: updatedOrg.organization_id,
+        name: updatedOrg.name,
+        description: updatedOrg.description,
+        owner_email: updatedOrg.owner_email,
+        admins: updatedOrg.admins,
+        managers: updatedOrg.managers,
+        members: updatedOrg.members,
+        member_profiles: updatedOrg.member_profiles,
+        settings: updatedOrg.settings,
+        permissions: updatedOrg.permissions,
+        created_date: updatedOrg.created_at,
+        updated_date: updatedOrg.updated_at
+      });
+
     } else {
       res.status(405).json({ error: 'Method not allowed' });
     }
