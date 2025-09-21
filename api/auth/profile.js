@@ -18,7 +18,7 @@ export default async function handler(req, res) {
     // Verify JWT token
     const decoded = jwt.verify(token, JWT_SECRET);
     
-    const { full_name, position, bio, phone, avatar_url } = req.body;
+    const { full_name, position, bio, phone, avatar_url, active_organization_id } = req.body;
 
     // Update user profile
     const result = await sql`
@@ -29,6 +29,7 @@ export default async function handler(req, res) {
         bio = ${bio || ''},
         phone = ${phone || ''},
         avatar_url = ${avatar_url || ''},
+        active_organization_id = COALESCE(${active_organization_id}, active_organization_id),
         updated_at = CURRENT_TIMESTAMP
       WHERE id = ${decoded.userId}
       RETURNING id, email, full_name, position, bio, phone, avatar_url, 
