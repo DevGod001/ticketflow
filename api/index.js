@@ -109,7 +109,57 @@ async function handleJoinRequests(req, res) {
 
     const decoded = jwt.verify(token, JWT_SECRET);
 
-    if (req.method === 'POST') {
+    if (req.method === 'GET') {
+      // Get join requests for organization
+      const { organization_id } = req.query;
+
+      if (!organization_id) {
+        return res.status(400).json({ error: 'Organization ID is required' });
+      }
+
+      // Auto-initialize join_requests table if it doesn't exist
+      try {
+        await sql`
+          CREATE TABLE IF NOT EXISTS join_requests (
+            id SERIAL PRIMARY KEY,
+            organization_id INTEGER NOT NULL,
+            user_email VARCHAR(255) NOT NULL,
+            message TEXT,
+            status VARCHAR(50) DEFAULT 'pending',
+            created_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+          );
+        `;
+      } catch (initError) {
+        console.log('Join requests table already exists or creation failed:', initError.message);
+      }
+
+      const result = await sql`
+        SELECT jr.*, u.full_name, u.avatar_url, u.position
+        FROM join_requests jr
+        LEFT JOIN users u ON jr.user_email = u.email
+        WHERE jr.organization_id = ${organization_id}
+        ORDER BY jr.created_date DESC
+      `;
+
+      const joinRequests = result.rows.map(request => ({
+        id: request.id,
+        organization_id: request.organization_id,
+        user_email: request.user_email,
+        message: request.message,
+        status: request.status,
+        created_date: request.created_date,
+        updated_date: request.updated_date,
+        user_profile: {
+          full_name: request.full_name,
+          avatar_url: request.avatar_url,
+          position: request.position
+        }
+      }));
+
+      res.status(200).json(joinRequests);
+
+    } else if (req.method === 'POST') {
       // Create join request
       const { organization_id, message } = req.body;
 
