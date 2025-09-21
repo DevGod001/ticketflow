@@ -12,6 +12,12 @@ export const Organization = {
         orgs.filter(org => criteria.id.$in.includes(org.id))
       );
     }
+    if (criteria.id) {
+      // Handle single id filter (used by Dashboard)
+      return apiClient.getOrganizations().then(orgs => 
+        orgs.filter(org => org.id === criteria.id)
+      );
+    }
     if (criteria.organization_id) {
       return apiClient.getOrganizations().then(orgs => 
         orgs.filter(org => org.organization_id === criteria.organization_id)
