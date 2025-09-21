@@ -266,9 +266,7 @@ export default function Dashboard() {
         // Load all data in parallel
         const [org, allTickets, userNotifications, orgDepartments] =
           await Promise.all([
-            Organization.filter({
-              id: currentUser.active_organization_id,
-            }).then((orgs) => orgs[0]),
+            Organization.get(currentUser.active_organization_id),
             Ticket.filter(
               { organization_id: currentUser.active_organization_id },
               "-created_date"
