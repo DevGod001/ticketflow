@@ -130,7 +130,7 @@ class ApiClient {
   }
 
   async deleteOrganization(id) {
-    return this.request(`/organizations/${id}`, {
+    return this.request(`/organizations?id=${id}`, {
       method: 'DELETE',
     });
   }

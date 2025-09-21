@@ -254,6 +254,50 @@ export default async function handler(req, res) {
         updated_date: updatedOrg.updated_at
       });
 
+    } else if (req.method === 'DELETE') {
+      // Delete organization (owner only)
+      const orgId = req.query.id;
+      
+      if (!orgId) {
+        return res.status(400).json({ error: 'Organization ID is required' });
+      }
+
+      // Get organization to check ownership
+      const orgResult = await sql`
+        SELECT * FROM organizations WHERE id = ${orgId}
+      `;
+
+      if (orgResult.rows.length === 0) {
+        return res.status(404).json({ error: 'Organization not found' });
+      }
+
+      const org = orgResult.rows[0];
+
+      // Only owner can delete organization
+      if (org.owner_email !== decoded.email) {
+        return res.status(403).json({ error: 'Only organization owner can delete the organization' });
+      }
+
+      // Remove organization from all users' verified_organizations
+      await sql`
+        UPDATE users 
+        SET verified_organizations = array_remove(verified_organizations, ${parseInt(orgId)}),
+            active_organization_id = CASE 
+              WHEN active_organization_id = ${parseInt(orgId)} THEN NULL 
+              ELSE active_organization_id 
+            END
+      `;
+
+      // Delete the organization
+      await sql`
+        DELETE FROM organizations WHERE id = ${orgId}
+      `;
+
+      res.status(200).json({ 
+        success: true, 
+        message: 'Organization deleted successfully' 
+      });
+
     } else {
       res.status(405).json({ error: 'Method not allowed' });
     }
