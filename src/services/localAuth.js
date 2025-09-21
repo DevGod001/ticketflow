@@ -113,6 +113,14 @@ class LocalAuthService {
       throw new Error('User not found');
     }
 
+    // Ensure user has required fields for organization functionality
+    if (!user.verified_organizations) {
+      user.verified_organizations = [];
+    }
+    if (!user.active_organization_id) {
+      user.active_organization_id = null;
+    }
+
     return { ...user };
   }
 
