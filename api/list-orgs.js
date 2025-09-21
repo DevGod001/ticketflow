@@ -4,9 +4,9 @@ export default async function handler(req, res) {
   try {
     // Get all organizations
     const result = await sql`
-      SELECT organization_id, name, owner_email, created_date 
+      SELECT organization_id, name, owner_email, created_at 
       FROM organizations 
-      ORDER BY created_date DESC
+      ORDER BY created_at DESC
     `;
 
     res.status(200).json({
