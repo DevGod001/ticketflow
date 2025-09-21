@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import { User } from "@/api/entities";
-import { Organization } from "@/api/entities";
 import { JoinRequest } from "@/api/entities";
 import { Notification } from "@/api/entities"; // Added import for Notification
+import { apiClient } from "@/services/apiClient";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -41,17 +41,28 @@ export default function JoinOrgForm({ onSuccess }) {
     try {
       const user = await User.me();
 
-      // Check if organization exists
-      const organizations = await Organization.filter({
-        organization_id: organizationId.trim(),
-      });
-      if (organizations.length === 0) {
-        setError("Organization not found. Please check the ID and try again.");
+      // Check if organization exists using the new API endpoint
+      let organization;
+      try {
+        const orgCheck = await apiClient.checkOrganizationExists(
+          organizationId.trim()
+        );
+        organization = {
+          id: orgCheck.organization_id, // Note: API returns organization_id, but we need id for other calls
+          organization_id: orgCheck.organization_id,
+          name: orgCheck.name,
+        };
+      } catch (error) {
+        if (error.message.includes("Organization not found")) {
+          setError(
+            "Organization not found. Please check the ID and try again."
+          );
+        } else {
+          setError("Failed to verify organization. Please try again.");
+        }
         setIsSubmitting(false);
         return;
       }
-
-      const organization = organizations[0];
 
       // Check if user is already a member
       if (user.verified_organizations?.includes(organization.id)) {

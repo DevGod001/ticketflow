@@ -148,9 +148,16 @@ class ApiClient {
   }
 
   async updateJoinRequest(id, updates) {
-    return this.request(`/join-requests/${id}`, {
+    return this.request(`/join-requests?id=${id}`, {
       method: 'PUT',
       body: updates,
+    });
+  }
+
+  // Check if organization exists (without authentication)
+  async checkOrganizationExists(organizationId) {
+    return this.request(`/join-requests?check_org=true&organization_id=${organizationId}`, {
+      method: 'GET',
     });
   }
 
