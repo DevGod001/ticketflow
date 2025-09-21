@@ -132,8 +132,13 @@ export default function Profile() {
       // 1. Upload the file
       const { file_url } = await UploadFile({ file });
 
-      // 2. Update the global User data first (primary source)
-      await User.updateMyUserData({ avatar_url: file_url });
+      // 2. Update the global User data with both avatar and current form data
+      const updateData = {
+        ...formData,
+        avatar_url: file_url,
+      };
+
+      await User.updateMyUserData(updateData);
 
       // 3. Update organization's member profile if user is in an organization
       if (organization && currentUser) {
@@ -142,7 +147,7 @@ export default function Profile() {
         if (orgs.length > 0) {
           const org = orgs[0];
           const updatedProfiles = org.member_profiles.map((p) =>
-            p.email === currentUser.email ? { ...p, avatar_url: file_url } : p
+            p.email === currentUser.email ? { ...p, ...updateData } : p
           );
 
           await Organization.update(org.id, {
