@@ -4,24 +4,31 @@ import jwt from 'jsonwebtoken';
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
 
 export default async function handler(req, res) {
-  const { pathname } = new URL(req.url, `http://${req.headers.host}`);
+  // Parse the URL to get the pathname
+  let pathname;
+  try {
+    pathname = new URL(req.url, `http://${req.headers.host}`).pathname;
+  } catch (error) {
+    // Fallback for cases where URL parsing fails
+    pathname = req.url.split('?')[0];
+  }
   
   // Route to appropriate handler based on pathname
-  if (pathname.startsWith('/api/tickets')) {
+  if (pathname.includes('/tickets')) {
     return handleTickets(req, res);
-  } else if (pathname.startsWith('/api/notifications')) {
+  } else if (pathname.includes('/notifications')) {
     return handleNotifications(req, res);
-  } else if (pathname.startsWith('/api/departments')) {
+  } else if (pathname.includes('/departments')) {
     return handleDepartments(req, res);
-  } else if (pathname.startsWith('/api/join-requests')) {
+  } else if (pathname.includes('/join-requests')) {
     return handleJoinRequests(req, res);
-  } else if (pathname === '/api/test-connection') {
+  } else if (pathname.includes('/test-connection')) {
     return handleTestConnection(req, res);
-  } else if (pathname === '/api/debug-auth') {
+  } else if (pathname.includes('/debug-auth')) {
     return handleDebugAuth(req, res);
   }
   
-  return res.status(404).json({ error: 'Endpoint not found' });
+  return res.status(404).json({ error: 'Endpoint not found', pathname, url: req.url });
 }
 
 // Test connection handler
