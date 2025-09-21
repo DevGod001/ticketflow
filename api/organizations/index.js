@@ -27,6 +27,29 @@ export default async function handler(req, res) {
 
       const orgId = organization_id || generateOrgId();
 
+      // Auto-initialize organizations table if it doesn't exist
+      try {
+        await sql`
+          CREATE TABLE IF NOT EXISTS organizations (
+            id SERIAL PRIMARY KEY,
+            organization_id VARCHAR(255) UNIQUE NOT NULL,
+            name VARCHAR(255) NOT NULL,
+            description TEXT,
+            owner_email VARCHAR(255) NOT NULL,
+            admins TEXT[],
+            managers TEXT[],
+            members TEXT[],
+            member_profiles JSONB,
+            settings JSONB,
+            permissions JSONB,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+          );
+        `;
+      } catch (initError) {
+        console.log('Organizations table already exists or creation failed:', initError.message);
+      }
+
       // Check if organization_id already exists
       const existing = await sql`
         SELECT id FROM organizations WHERE organization_id = ${orgId}

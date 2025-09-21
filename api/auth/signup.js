@@ -16,6 +16,28 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Email and password are required' });
     }
 
+    // Auto-initialize database tables if they don't exist
+    try {
+      await sql`
+        CREATE TABLE IF NOT EXISTS users (
+          id SERIAL PRIMARY KEY,
+          email VARCHAR(255) UNIQUE NOT NULL,
+          password_hash VARCHAR(255) NOT NULL,
+          full_name VARCHAR(255),
+          position VARCHAR(255),
+          bio TEXT,
+          phone VARCHAR(50),
+          avatar_url TEXT,
+          active_organization_id INTEGER,
+          verified_organizations INTEGER[],
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+      `;
+    } catch (initError) {
+      console.log('Table already exists or creation failed:', initError.message);
+    }
+
     // Check if user already exists
     const existingUser = await sql`
       SELECT id FROM users WHERE email = ${email}
