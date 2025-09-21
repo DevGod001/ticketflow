@@ -1,61 +1,170 @@
-import { base44 } from './base44Client.js';
-import { localAuth } from '../services/localAuth.js';
-import { LocalOrganization } from '../services/localOrganization.js';
-import { LocalJoinRequest } from '../services/localJoinRequest.js';
-import { LocalNotification } from '../services/localNotification.js';
-import { LocalDepartment } from '../services/localDepartment.js';
-import { LocalTeam } from '../services/localTeam.js';
-import { LocalTicket } from '../services/localTicket.js';
-import { LocalDirectMessage } from '../services/localDirectMessage.js';
-import { LocalComment } from '../services/localComment.js';
-import { LocalCollaborationRoom } from '../services/localCollaborationRoom.js';
-import { LocalGroupMessage } from '../services/localGroupMessage.js';
-import { LocalChannel } from '../services/localChannel.js';
-import { LocalChannelMessage } from '../services/localChannelMessage.js';
+import { apiClient } from '../services/apiClient.js';
 
+// API-based entities for cross-device persistence
+export const Organization = {
+  create: (data) => apiClient.createOrganization(data),
+  filter: (criteria) => {
+    // Handle filtering logic for organizations
+    if (criteria.id && criteria.id.$in) {
+      // For now, get all organizations and filter client-side
+      // In a real implementation, you'd pass this to the API
+      return apiClient.getOrganizations().then(orgs => 
+        orgs.filter(org => criteria.id.$in.includes(org.id))
+      );
+    }
+    if (criteria.organization_id) {
+      return apiClient.getOrganizations().then(orgs => 
+        orgs.filter(org => org.organization_id === criteria.organization_id)
+      );
+    }
+    return apiClient.getOrganizations();
+  },
+  get: (id) => apiClient.getOrganization(id),
+  update: (id, data) => apiClient.updateOrganization(id, data),
+  delete: (id) => apiClient.deleteOrganization(id),
+};
 
-export const Organization = LocalOrganization;
+export const Department = {
+  create: (data) => apiClient.createDepartment(data),
+  filter: (criteria) => {
+    const orgId = criteria.organization_id;
+    return apiClient.getDepartments(orgId);
+  },
+  get: (id) => apiClient.getDepartment(id),
+  update: (id, data) => apiClient.updateDepartment(id, data),
+  delete: (id) => apiClient.deleteDepartment(id),
+};
 
-export const Department = LocalDepartment;
+export const Ticket = {
+  create: (data) => apiClient.createTicket(data),
+  filter: (criteria) => apiClient.getTickets(criteria),
+  get: (id) => apiClient.getTicket(id),
+  update: (id, data) => apiClient.updateTicket(id, data),
+  delete: (id) => apiClient.deleteTicket(id),
+};
 
-export const Ticket = LocalTicket;
+export const Comment = {
+  create: (data) => apiClient.createComment(data),
+  filter: (criteria) => {
+    if (criteria.ticket_id) {
+      return apiClient.getComments(criteria.ticket_id);
+    }
+    return Promise.resolve([]);
+  },
+  get: (id) => apiClient.getComment(id),
+  update: (id, data) => apiClient.updateComment(id, data),
+  delete: (id) => apiClient.deleteComment(id),
+};
 
-export const Comment = LocalComment;
+export const Notification = {
+  create: (data) => apiClient.createNotification(data),
+  filter: (criteria) => apiClient.getNotifications(),
+  get: (id) => apiClient.getNotification(id),
+  update: (id, data) => apiClient.updateNotification(id, data),
+  delete: (id) => apiClient.deleteNotification(id),
+  markAsRead: (id) => apiClient.markNotificationRead(id),
+};
 
-export const Notification = LocalNotification;
+export const JoinRequest = {
+  create: (data) => apiClient.createJoinRequest(data),
+  filter: (criteria, sort) => {
+    if (criteria.organization_id) {
+      return apiClient.getJoinRequests(criteria.organization_id);
+    }
+    return Promise.resolve([]);
+  },
+  get: (id) => apiClient.getJoinRequest(id),
+  update: (id, data) => apiClient.updateJoinRequest(id, data),
+  delete: (id) => apiClient.deleteJoinRequest(id),
+};
 
-export const JoinRequest = LocalJoinRequest;
+export const DirectMessage = {
+  create: (data) => apiClient.sendDirectMessage(data),
+  filter: (criteria) => {
+    if (criteria.recipient_email) {
+      return apiClient.getDirectMessages(criteria.recipient_email);
+    }
+    return Promise.resolve([]);
+  },
+  get: (id) => apiClient.getDirectMessage(id),
+  update: (id, data) => apiClient.updateDirectMessage(id, data),
+  delete: (id) => apiClient.deleteDirectMessage(id),
+};
 
-export const DirectMessage = LocalDirectMessage;
+export const Channel = {
+  create: (data) => apiClient.createChannel(data),
+  filter: (criteria) => {
+    if (criteria.organization_id) {
+      return apiClient.getChannels(criteria.organization_id);
+    }
+    return Promise.resolve([]);
+  },
+  get: (id) => apiClient.getChannel(id),
+  update: (id, data) => apiClient.updateChannel(id, data),
+  delete: (id) => apiClient.deleteChannel(id),
+};
 
-export const Channel = LocalChannel;
+export const ChannelMessage = {
+  create: (data) => apiClient.sendChannelMessage(data.channel_id, data),
+  filter: (criteria) => {
+    if (criteria.channel_id) {
+      return apiClient.getChannelMessages(criteria.channel_id);
+    }
+    return Promise.resolve([]);
+  },
+  get: (id) => apiClient.getChannelMessage(id),
+  update: (id, data) => apiClient.updateChannelMessage(id, data),
+  delete: (id) => apiClient.deleteChannelMessage(id),
+};
 
-export const ChannelMessage = LocalChannelMessage;
+export const Team = {
+  create: (data) => apiClient.createTeam(data),
+  filter: (criteria) => {
+    if (criteria.organization_id) {
+      return apiClient.getTeams(criteria.organization_id);
+    }
+    return Promise.resolve([]);
+  },
+  get: (id) => apiClient.getTeam(id),
+  update: (id, data) => apiClient.updateTeam(id, data),
+  delete: (id) => apiClient.deleteTeam(id),
+};
 
-export const Team = LocalTeam;
+export const CollaborationRoom = {
+  create: (data) => apiClient.createCollaborationRoom(data),
+  filter: (criteria) => {
+    if (criteria.organization_id) {
+      return apiClient.getCollaborationRooms(criteria.organization_id);
+    }
+    return Promise.resolve([]);
+  },
+  get: (id) => apiClient.getCollaborationRoom(id),
+  update: (id, data) => apiClient.updateCollaborationRoom(id, data),
+  delete: (id) => apiClient.deleteCollaborationRoom(id),
+};
 
-export const CollaborationRoom = LocalCollaborationRoom;
+export const GroupMessage = {
+  create: (data) => apiClient.sendRoomMessage(data.room_id, data),
+  filter: (criteria) => {
+    if (criteria.room_id) {
+      return apiClient.getRoomMessages(criteria.room_id);
+    }
+    return Promise.resolve([]);
+  },
+  get: (id) => apiClient.getRoomMessage(id),
+  update: (id, data) => apiClient.updateRoomMessage(id, data),
+  delete: (id) => apiClient.deleteRoomMessage(id),
+};
 
-export const GroupMessage = LocalGroupMessage;
-
-// Override Base44 auth with local authentication for development
+// API-based User entity
 export const User = {
-  // Use local auth methods
-  me: () => localAuth.me(),
-  logout: () => localAuth.logout(),
-  updateMyUserData: (data) => localAuth.updateMyUserData(data),
-  
-  // Add local auth specific methods
-  signup: (userData) => localAuth.signup(userData),
-  login: (email, password) => localAuth.login(email, password),
-  isAuthenticated: () => localAuth.isAuthenticated(),
-  getUserByEmail: (email) => localAuth.getUserByEmail(email),
-  updateUserByEmail: (email, data) => localAuth.updateUserByEmail(email, data),
-  filter: (criteria) => localAuth.filter(criteria), // Use local filter instead of Base44
-  
-  // Keep Base44 methods for other user operations if needed (but not commonly used)
-  get: base44.auth.get,
-  create: base44.auth.create,
-  update: base44.auth.update,
-  delete: base44.auth.delete,
+  me: () => apiClient.me(),
+  logout: () => apiClient.logout(),
+  updateMyUserData: (data) => apiClient.updateProfile(data),
+  signup: (userData) => apiClient.signup(userData),
+  login: (email, password) => apiClient.login(email, password),
+  isAuthenticated: () => !!apiClient.token,
+  getUserByEmail: (email) => apiClient.getUserByEmail(email),
+  updateUserByEmail: (email, data) => apiClient.updateUserByEmail(email, data),
+  filter: (criteria) => apiClient.getUsers(criteria),
 };
