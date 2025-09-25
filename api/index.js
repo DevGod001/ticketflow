@@ -119,19 +119,27 @@ async function handleJoinRequests(req, res) {
 
       // Auto-initialize join_requests table if it doesn't exist
       try {
-        await sql`
-          CREATE TABLE IF NOT EXISTS join_requests (
-            id SERIAL PRIMARY KEY,
-            organization_id VARCHAR(255) NOT NULL,
-            user_email VARCHAR(255) NOT NULL,
-            message TEXT,
-            status VARCHAR(50) DEFAULT 'pending',
-            created_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-          );
-        `;
+        // First, try to alter the existing table to fix the schema
+        try {
+          await sql`ALTER TABLE join_requests ALTER COLUMN organization_id TYPE VARCHAR(255)`;
+          console.log('Successfully altered join_requests table schema');
+        } catch (alterError) {
+          console.log('Table alteration failed, trying to create table:', alterError.message);
+          // If alter fails, try to create the table (it might not exist)
+          await sql`
+            CREATE TABLE IF NOT EXISTS join_requests (
+              id SERIAL PRIMARY KEY,
+              organization_id VARCHAR(255) NOT NULL,
+              user_email VARCHAR(255) NOT NULL,
+              message TEXT,
+              status VARCHAR(50) DEFAULT 'pending',
+              created_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+              updated_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+          `;
+        }
       } catch (initError) {
-        console.log('Join requests table already exists or creation failed:', initError.message);
+        console.log('Join requests table initialization failed:', initError.message);
       }
 
       const result = await sql`
@@ -185,19 +193,27 @@ async function handleJoinRequests(req, res) {
 
       // Auto-initialize join_requests table if it doesn't exist
       try {
-        await sql`
-          CREATE TABLE IF NOT EXISTS join_requests (
-            id SERIAL PRIMARY KEY,
-            organization_id VARCHAR(255) NOT NULL,
-            user_email VARCHAR(255) NOT NULL,
-            message TEXT,
-            status VARCHAR(50) DEFAULT 'pending',
-            created_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-          );
-        `;
+        // First, try to alter the existing table to fix the schema
+        try {
+          await sql`ALTER TABLE join_requests ALTER COLUMN organization_id TYPE VARCHAR(255)`;
+          console.log('Successfully altered join_requests table schema');
+        } catch (alterError) {
+          console.log('Table alteration failed, trying to create table:', alterError.message);
+          // If alter fails, try to create the table (it might not exist)
+          await sql`
+            CREATE TABLE IF NOT EXISTS join_requests (
+              id SERIAL PRIMARY KEY,
+              organization_id VARCHAR(255) NOT NULL,
+              user_email VARCHAR(255) NOT NULL,
+              message TEXT,
+              status VARCHAR(50) DEFAULT 'pending',
+              created_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+              updated_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+          `;
+        }
       } catch (initError) {
-        console.log('Join requests table already exists or creation failed:', initError.message);
+        console.log('Join requests table initialization failed:', initError.message);
       }
 
       // Check if there's already a pending request
