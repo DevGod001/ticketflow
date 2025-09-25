@@ -75,20 +75,20 @@ export default function JoinRequests({ requests, organization, onUpdate }) {
         // Send approval notification
         await Notification.create({
           user_email: request.user_email,
-          type: "organization_invite",
+          type: "organization_join_request",
           title: "Welcome to the team! 🎉",
           message: `Your request to join ${organization.name} has been approved.`,
-          organization_id: organization.id,
+          organization_id: organization.organization_id,
           from_user_email: currentUser.email,
         });
       } else {
         // Send rejection notification
         await Notification.create({
           user_email: request.user_email,
-          type: "organization_invite",
+          type: "organization_join_request",
           title: "Join request update",
           message: `Your request to join ${organization.name} has been declined.`,
-          organization_id: organization.id,
+          organization_id: organization.organization_id,
           from_user_email: currentUser.email,
         });
       }
