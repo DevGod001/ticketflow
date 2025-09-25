@@ -204,6 +204,13 @@ class ApiClient {
   }
 
   // Notification methods
+  async createNotification(notificationData) {
+    return this.request('/notifications', {
+      method: 'POST',
+      body: notificationData,
+    });
+  }
+
   async getNotifications() {
     return this.request('/notifications');
   }
