@@ -122,7 +122,7 @@ async function handleJoinRequests(req, res) {
         await sql`
           CREATE TABLE IF NOT EXISTS join_requests (
             id SERIAL PRIMARY KEY,
-            organization_id INTEGER NOT NULL,
+            organization_id VARCHAR(255) NOT NULL,
             user_email VARCHAR(255) NOT NULL,
             message TEXT,
             status VARCHAR(50) DEFAULT 'pending',
@@ -188,7 +188,7 @@ async function handleJoinRequests(req, res) {
         await sql`
           CREATE TABLE IF NOT EXISTS join_requests (
             id SERIAL PRIMARY KEY,
-            organization_id INTEGER NOT NULL,
+            organization_id VARCHAR(255) NOT NULL,
             user_email VARCHAR(255) NOT NULL,
             message TEXT,
             status VARCHAR(50) DEFAULT 'pending',
@@ -203,7 +203,7 @@ async function handleJoinRequests(req, res) {
       // Check if there's already a pending request
       const existingRequest = await sql`
         SELECT * FROM join_requests 
-        WHERE organization_id = ${organization.id} 
+        WHERE organization_id = ${organization.organization_id} 
         AND user_email = ${decoded.email} 
         AND status = 'pending'
       `;
@@ -215,7 +215,7 @@ async function handleJoinRequests(req, res) {
       // Create join request
       const result = await sql`
         INSERT INTO join_requests (organization_id, user_email, message)
-        VALUES (${organization.id}, ${decoded.email}, ${message || ''})
+        VALUES (${organization.organization_id}, ${decoded.email}, ${message || ''})
         RETURNING *
       `;
 
