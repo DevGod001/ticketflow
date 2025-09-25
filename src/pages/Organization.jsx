@@ -86,7 +86,7 @@ export default function OrganizationPage() {
               try {
                 const requests = await JoinRequest.filter(
                   {
-                    organization_id: active.id,
+                    organization_id: active.organization_id,
                     status: "pending",
                   },
                   "-created_date"
