@@ -104,6 +104,17 @@ class ApiClient {
     return Promise.resolve({ success: true });
   }
 
+  async getUserByEmail(email) {
+    return this.request(`/auth/user?email=${email}`);
+  }
+
+  async updateUserByEmail(email, updates) {
+    return this.request(`/auth/user?email=${email}`, {
+      method: 'PUT',
+      body: updates,
+    });
+  }
+
   // Organization methods
   async createOrganization(orgData) {
     return this.request('/organizations', {

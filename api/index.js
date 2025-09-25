@@ -22,6 +22,8 @@ export default async function handler(req, res) {
     return handleDepartments(req, res);
   } else if (pathname.includes('/join-requests')) {
     return handleJoinRequests(req, res);
+  } else if (pathname.includes('/auth/user')) {
+    return handleUserOperations(req, res);
   } else if (pathname.includes('/test-connection')) {
     return handleTestConnection(req, res);
   } else if (pathname.includes('/debug-auth')) {
@@ -248,6 +250,71 @@ async function handleJoinRequests(req, res) {
         organization_name: organization.name
       });
 
+    } else if (req.method === 'PUT') {
+      // Update join request (approve/reject)
+      const { id } = req.query;
+      const { status, reviewed_by, reviewed_at } = req.body;
+
+      if (!id) {
+        return res.status(400).json({ error: 'Join request ID is required' });
+      }
+
+      if (!status || !['approved', 'declined'].includes(status)) {
+        return res.status(400).json({ error: 'Valid status (approved/declined) is required' });
+      }
+
+      // Auto-initialize join_requests table if it doesn't exist
+      try {
+        try {
+          await sql`ALTER TABLE join_requests ALTER COLUMN organization_id TYPE VARCHAR(255)`;
+        } catch (alterError) {
+          await sql`
+            CREATE TABLE IF NOT EXISTS join_requests (
+              id SERIAL PRIMARY KEY,
+              organization_id VARCHAR(255) NOT NULL,
+              user_email VARCHAR(255) NOT NULL,
+              message TEXT,
+              status VARCHAR(50) DEFAULT 'pending',
+              reviewed_by VARCHAR(255),
+              reviewed_at TIMESTAMP,
+              created_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+              updated_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+          `;
+        }
+      } catch (initError) {
+        console.log('Join requests table initialization failed:', initError.message);
+      }
+
+      // Update the join request
+      const result = await sql`
+        UPDATE join_requests 
+        SET status = ${status}, 
+            reviewed_by = ${reviewed_by || decoded.email}, 
+            reviewed_at = ${reviewed_at || new Date().toISOString()},
+            updated_date = CURRENT_TIMESTAMP
+        WHERE id = ${id}
+        RETURNING *
+      `;
+
+      if (result.rows.length === 0) {
+        return res.status(404).json({ error: 'Join request not found' });
+      }
+
+      const updatedRequest = result.rows[0];
+
+      res.status(200).json({
+        id: updatedRequest.id,
+        organization_id: updatedRequest.organization_id,
+        user_email: updatedRequest.user_email,
+        message: updatedRequest.message,
+        status: updatedRequest.status,
+        reviewed_by: updatedRequest.reviewed_by,
+        reviewed_at: updatedRequest.reviewed_at,
+        created_date: updatedRequest.created_date,
+        updated_date: updatedRequest.updated_date
+      });
+
     } else {
       res.status(405).json({ error: 'Method not allowed' });
     }
@@ -257,6 +324,109 @@ async function handleJoinRequests(req, res) {
       return res.status(401).json({ error: 'Invalid token' });
     }
     console.error('Join requests API error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+}
+
+// User operations handler
+async function handleUserOperations(req, res) {
+  try {
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    
+    if (!token) {
+      return res.status(401).json({ error: 'No token provided' });
+    }
+
+    const decoded = jwt.verify(token, JWT_SECRET);
+    const { email } = req.query;
+
+    if (!email) {
+      return res.status(400).json({ error: 'Email parameter is required' });
+    }
+
+    if (req.method === 'GET') {
+      // Get user by email
+      const result = await sql`
+        SELECT * FROM users WHERE email = ${email}
+      `;
+
+      if (result.rows.length === 0) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+
+      const user = result.rows[0];
+      res.status(200).json({
+        id: user.id,
+        email: user.email,
+        full_name: user.full_name,
+        position: user.position,
+        avatar_url: user.avatar_url,
+        verified_organizations: user.verified_organizations,
+        active_organization_id: user.active_organization_id
+      });
+
+    } else if (req.method === 'PUT') {
+      // Update user by email
+      const updates = req.body;
+      
+      // Build dynamic update query
+      const updateFields = [];
+      const updateValues = [];
+      let paramIndex = 1;
+
+      if (updates.verified_organizations !== undefined) {
+        updateFields.push(`verified_organizations = $${paramIndex}`);
+        updateValues.push(updates.verified_organizations);
+        paramIndex++;
+      }
+
+      if (updates.active_organization_id !== undefined) {
+        updateFields.push(`active_organization_id = $${paramIndex}`);
+        updateValues.push(updates.active_organization_id);
+        paramIndex++;
+      }
+
+      if (updates.full_name !== undefined) {
+        updateFields.push(`full_name = $${paramIndex}`);
+        updateValues.push(updates.full_name);
+        paramIndex++;
+      }
+
+      if (updateFields.length === 0) {
+        return res.status(400).json({ error: 'No valid update fields provided' });
+      }
+
+      updateValues.push(email); // Add email for WHERE clause
+      
+      const result = await sql.query(
+        `UPDATE users SET ${updateFields.join(', ')} WHERE email = $${paramIndex} RETURNING *`,
+        updateValues
+      );
+
+      if (result.rows.length === 0) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+
+      const user = result.rows[0];
+      res.status(200).json({
+        id: user.id,
+        email: user.email,
+        full_name: user.full_name,
+        position: user.position,
+        avatar_url: user.avatar_url,
+        verified_organizations: user.verified_organizations,
+        active_organization_id: user.active_organization_id
+      });
+
+    } else {
+      res.status(405).json({ error: 'Method not allowed' });
+    }
+
+  } catch (error) {
+    if (error.name === 'JsonWebTokenError') {
+      return res.status(401).json({ error: 'Invalid token' });
+    }
+    console.error('User operations API error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 }
