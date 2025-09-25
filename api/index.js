@@ -14,7 +14,9 @@ export default async function handler(req, res) {
   }
   
   // Route to appropriate handler based on pathname
-  if (pathname.includes('/tickets')) {
+  if (pathname.includes('/auth/user')) {
+    return handleUserOperations(req, res);
+  } else if (pathname.includes('/tickets')) {
     return handleTickets(req, res);
   } else if (pathname.includes('/notifications')) {
     return handleNotifications(req, res);
@@ -22,8 +24,6 @@ export default async function handler(req, res) {
     return handleDepartments(req, res);
   } else if (pathname.includes('/join-requests')) {
     return handleJoinRequests(req, res);
-  } else if (pathname.includes('/auth/user')) {
-    return handleUserOperations(req, res);
   } else if (pathname.includes('/test-connection')) {
     return handleTestConnection(req, res);
   } else if (pathname.includes('/debug-auth')) {
