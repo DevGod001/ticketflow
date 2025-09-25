@@ -387,6 +387,55 @@ async function handleNotifications(req, res) {
 
       res.status(200).json(notifications);
 
+    } else if (req.method === 'POST') {
+      // Create notification
+      const { user_email, title, message, type, link, organization_id, from_user_email } = req.body;
+
+      if (!user_email || !title) {
+        return res.status(400).json({ error: 'user_email and title are required' });
+      }
+
+      // Auto-initialize notifications table if it doesn't exist
+      try {
+        await sql`
+          CREATE TABLE IF NOT EXISTS notifications (
+            id SERIAL PRIMARY KEY,
+            user_email VARCHAR(255) NOT NULL,
+            title VARCHAR(255) NOT NULL,
+            message TEXT,
+            type VARCHAR(50) DEFAULT 'info',
+            link VARCHAR(500),
+            organization_id VARCHAR(255),
+            from_user_email VARCHAR(255),
+            read BOOLEAN DEFAULT false,
+            created_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+          );
+        `;
+      } catch (initError) {
+        console.log('Notifications table already exists or creation failed:', initError.message);
+      }
+
+      const result = await sql`
+        INSERT INTO notifications (user_email, title, message, type, link, organization_id, from_user_email)
+        VALUES (${user_email}, ${title}, ${message || ''}, ${type || 'info'}, ${link || null}, ${organization_id || null}, ${from_user_email || null})
+        RETURNING *
+      `;
+
+      const notification = result.rows[0];
+
+      res.status(201).json({
+        id: notification.id,
+        user_email: notification.user_email,
+        title: notification.title,
+        message: notification.message,
+        type: notification.type,
+        link: notification.link,
+        organization_id: notification.organization_id,
+        from_user_email: notification.from_user_email,
+        read: notification.read,
+        created_date: notification.created_date
+      });
+
     } else {
       res.status(405).json({ error: 'Method not allowed' });
     }
