@@ -11,6 +11,22 @@ export default async function handler(req, res) {
   }
 
   try {
+    // First, ensure the join_requests table exists
+    await sql`
+      CREATE TABLE IF NOT EXISTS join_requests (
+        id SERIAL PRIMARY KEY,
+        organization_id VARCHAR(255) NOT NULL,
+        user_email VARCHAR(255) NOT NULL,
+        user_name VARCHAR(255),
+        message TEXT,
+        status VARCHAR(50) DEFAULT 'pending',
+        reviewed_by VARCHAR(255),
+        reviewed_at TIMESTAMP,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `;
+
     const { method, query, body } = req;
 
     switch (method) {
@@ -58,6 +74,12 @@ export default async function handler(req, res) {
         // Create a new join request
         const { user_email, organization_id, message } = body;
         
+        if (!user_email || !organization_id) {
+          return res.status(400).json({ 
+            error: 'user_email and organization_id are required' 
+          });
+        }
+
         // Check if request already exists
         const existingResult = await sql`
           SELECT id FROM join_requests 
@@ -90,40 +112,16 @@ export default async function handler(req, res) {
           return res.status(400).json({ error: 'Join request ID is required' });
         }
 
-        // Build the update query dynamically
-        const updateFields = [];
-        const updateValues = [];
-        let paramIndex = 1;
-
-        if (updates.status) {
-          updateFields.push(`status = $${paramIndex++}`);
-          updateValues.push(updates.status);
-        }
-
-        if (updates.reviewed_by) {
-          updateFields.push(`reviewed_by = $${paramIndex++}`);
-          updateValues.push(updates.reviewed_by);
-        }
-
-        if (updates.reviewed_at) {
-          updateFields.push(`reviewed_at = $${paramIndex++}`);
-          updateValues.push(updates.reviewed_at);
-        }
-
-        if (updateFields.length === 0) {
-          return res.status(400).json({ error: 'No valid fields to update' });
-        }
-
-        updateValues.push(id); // Add ID as the last parameter
-        
-        const updateQuery = `
+        // Use a simpler update approach
+        const updateResult = await sql`
           UPDATE join_requests 
-          SET ${updateFields.join(', ')}
-          WHERE id = $${paramIndex}
+          SET status = ${updates.status || 'pending'},
+              reviewed_by = ${updates.reviewed_by || null},
+              reviewed_at = ${updates.reviewed_at || null},
+              updated_at = NOW()
+          WHERE id = ${id}
           RETURNING *
         `;
-
-        const updateResult = await sql.query(updateQuery, updateValues);
 
         if (updateResult.rows.length === 0) {
           return res.status(404).json({ error: 'Join request not found' });
@@ -159,9 +157,10 @@ export default async function handler(req, res) {
     }
   } catch (error) {
     console.error('Join requests API error:', error);
+    console.error('Error stack:', error.stack);
     return res.status(500).json({ 
       error: 'Internal server error',
-      details: error.message 
+      details: error.message
     });
   }
 }
