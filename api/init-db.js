@@ -111,11 +111,14 @@ export default async function handler(req, res) {
     await sql`
       CREATE TABLE IF NOT EXISTS join_requests (
         id SERIAL PRIMARY KEY,
-        organization_id INTEGER REFERENCES organizations(id),
+        organization_id VARCHAR(255) NOT NULL,
         user_email VARCHAR(255) NOT NULL,
         user_name VARCHAR(255),
         message TEXT,
         status VARCHAR(50) DEFAULT 'pending',
+        reviewed_by VARCHAR(255),
+        reviewed_at TIMESTAMP,
+        created_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
