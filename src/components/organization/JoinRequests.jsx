@@ -175,7 +175,7 @@ export default function JoinRequests({ requests, organization, onUpdate }) {
                         <p className="text-xs md:text-sm text-slate-500 mb-3">
                           Requested{" "}
                           {format(
-                            new Date(request.created_date),
+                            new Date(request.created_at),
                             "MMM d, yyyy • h:mm a"
                           )}
                         </p>

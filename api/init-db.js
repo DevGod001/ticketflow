@@ -118,7 +118,6 @@ export default async function handler(req, res) {
         status VARCHAR(50) DEFAULT 'pending',
         reviewed_by VARCHAR(255),
         reviewed_at TIMESTAMP,
-        created_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );

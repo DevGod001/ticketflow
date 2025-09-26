@@ -37,7 +37,7 @@ export default async function handler(req, res) {
             LEFT JOIN users u ON jr.user_email = u.email
             WHERE jr.organization_id = ${query.organization_id}
             AND jr.status = 'pending'
-            ORDER BY jr.created_date DESC
+            ORDER BY jr.created_at DESC
           `;
           
           return res.json(result.rows);
@@ -48,7 +48,7 @@ export default async function handler(req, res) {
           SELECT jr.*, u.full_name, u.avatar_url
           FROM join_requests jr
           LEFT JOIN users u ON jr.user_email = u.email
-          ORDER BY jr.created_date DESC
+          ORDER BY jr.created_at DESC
         `;
         
         return res.json(allResult.rows);
@@ -73,7 +73,7 @@ export default async function handler(req, res) {
         }
 
         const insertResult = await sql`
-          INSERT INTO join_requests (user_email, organization_id, message, status, created_date)
+          INSERT INTO join_requests (user_email, organization_id, message, status, created_at)
           VALUES (${user_email}, ${organization_id}, ${message || ''}, 'pending', NOW())
           RETURNING *
         `;
